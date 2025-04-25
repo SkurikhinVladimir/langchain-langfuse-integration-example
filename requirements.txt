@@ -1,8 +1,0 @@
-langchain>=0.1.0
-langchain-core>=0.1.0
-langfuse>=2.0.0
-fastapi>=0.100.0
-uvicorn>=0.23.0
-python-dotenv>=1.0.0
-langserve>=0.0.34 
-sse_starlette>=0.15.0

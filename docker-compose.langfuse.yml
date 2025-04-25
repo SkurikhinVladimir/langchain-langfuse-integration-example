@@ -4,6 +4,7 @@
 # All other components are bound to localhost (127.0.0.1) to only accept connections from the local machine.
 # External connections from other machines will not be able to reach these services directly.
 services:
+
   langfuse-worker:
     image: langfuse/langfuse-worker:3
     restart: always

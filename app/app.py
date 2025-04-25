@@ -11,15 +11,15 @@ from langfuse.callback import CallbackHandler
 from langserve import add_routes
 from langchain.schema import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from custom_runnable import PassThroughRunnable
-from models.schemas import InputModel
+from custom_runnable import PassThroughRunnable, UppercaseRunnable
 
 load_dotenv()
+
 
 def init_langfuse():
     """Инициализация Langfuse для локального использования"""
     handler = CallbackHandler(
-        host="http://localhost:3000",
+        host=os.getenv("LANGFUSE_URL"),
         public_key=os.getenv("LANGFUSE_INIT_PROJECT_PUBLIC_KEY"),
         secret_key=os.getenv("LANGFUSE_INIT_PROJECT_SECRET_KEY")
     )
@@ -65,6 +65,7 @@ prompt = ChatPromptTemplate.from_messages([
 chain = (
     prompt 
     | llm 
+    | UppercaseRunnable()
     | PassThroughRunnable()
     | StrOutputParser()
 ).with_config(config)
@@ -80,9 +81,8 @@ app = FastAPI(
 add_routes(
     app,
     chain,
-    path="/test-simple-llm-call",
-    input_type=InputModel,
-    output_type=str,
+    path="/v1",
+    enabled_endpoints=["invoke"]
 )
 
 if __name__ == "__main__":
