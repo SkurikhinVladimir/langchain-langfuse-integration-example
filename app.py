@@ -11,7 +11,8 @@ from langfuse.callback import CallbackHandler
 from langserve import add_routes
 from langchain.schema import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-
+from custom_runnable import PassThroughRunnable
+from models.schemas import InputModel
 
 load_dotenv()
 
@@ -51,7 +52,6 @@ class SimpleLLM(BaseChatModel):
     def _identifying_params(self) -> Dict[str, Any]:
         return {"model_name": self.model_name, "temperature": self.temperature}
 
-
 # Инициализация компонентов
 langfuse_handler = init_langfuse()
 llm = SimpleLLM()
@@ -65,17 +65,26 @@ prompt = ChatPromptTemplate.from_messages([
 chain = (
     prompt 
     | llm 
+    | PassThroughRunnable()
     | StrOutputParser()
 ).with_config(config)
 
 # Настройка сервера
-app = FastAPI()
+app = FastAPI(
+    title="Langfuse Integration Example",
+    description="Пример интеграции Langfuse с LangChain",
+    version="1.0.0"
+)
 
-# Добавление маршрута Langserve
+# Добавление маршрута Langserve с моделями
 add_routes(
     app,
     chain,
     path="/test-simple-llm-call",
+    input_type=InputModel,
+    output_type=str,
 )
 
-chain.invoke({"input": "Hello, world!"})
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
