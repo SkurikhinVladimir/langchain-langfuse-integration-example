@@ -1,6 +1,6 @@
-from langchain_core.runnables import RunnableSerializable, RunnableConfig
-from typing import Optional
-from typing import Any
+from typing import Any, Optional
+
+from langchain_core.runnables import RunnableConfig, RunnableSerializable
 from pydantic import BaseModel, Field
 
 
@@ -17,8 +17,8 @@ class UppercaseRunnable(RunnableSerializable[str, str]):
     def invoke(self, input: str, config: Optional[RunnableConfig] = None, **kwargs: Any) -> str:
         return self._call_with_config(lambda x: x.upper(), input, config)
 
-    async def ainvoke(self, input: str, config: Optional[RunnableConfig] = None, **kwargs: Any) -> str:
-        return await self._acall_with_config(lambda x: x.upper(), input, config)
+    # async def ainvoke(self, input: str, config: Optional[RunnableConfig] = None, **kwargs: Any) -> str:
+    #     return await self._acall_with_config(lambda x: x.upper(), input, config)
 
 
 class PassThroughRunnable(RunnableSerializable[str, str]):
@@ -36,11 +36,15 @@ class PassThroughRunnable(RunnableSerializable[str, str]):
     async def ainvoke(self, input: str, config: Optional[RunnableConfig] = None, **kwargs: Any) -> str:
         return input
     
-    def get_input_schema(self, config: Optional[RunnableConfig] = None) -> type[BaseModel]:
-        """Возвращает схему входных данных."""
-        return str
-    
-    def get_output_schema(self, config: Optional[RunnableConfig] = None) -> type[BaseModel]:
-        """Возвращает схему выходных данных."""
-        return str
 
+class RaiseExceptionRunnable(RunnableSerializable[str, str]):
+    
+    def raise_value_error(self):
+        raise ValueError('Ошибка при запуске цепочки')
+    
+    def invoke(self, input: str, config: Optional[RunnableConfig] = None, **kwargs: Any) -> str:
+        return self._call_with_config(
+            lambda x: self.raise_value_error(),  
+            input, 
+            config
+        )

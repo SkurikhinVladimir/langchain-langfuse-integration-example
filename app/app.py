@@ -1,17 +1,18 @@
 import os
 from typing import Any, Dict, List, Optional
 
+from custom_runnable import (PassThroughRunnable, RaiseExceptionRunnable,
+                             UppercaseRunnable)
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from langchain.schema import StrOutputParser
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langfuse.callback import CallbackHandler
 from langserve import add_routes
-from langchain.schema import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from custom_runnable import PassThroughRunnable, UppercaseRunnable
 
 load_dotenv()
 
@@ -65,10 +66,21 @@ prompt = ChatPromptTemplate.from_messages([
 chain = (
     prompt 
     | llm 
-    | UppercaseRunnable()
-    | PassThroughRunnable()
     | StrOutputParser()
+    | PassThroughRunnable()
+    | UppercaseRunnable()
 ).with_config(config)
+
+
+chain_with_error = (
+    prompt 
+    | llm 
+    | StrOutputParser()
+    | PassThroughRunnable()
+    | UppercaseRunnable()
+    | RaiseExceptionRunnable()
+).with_config(config)
+
 
 # Настройка сервера
 app = FastAPI(
@@ -82,6 +94,13 @@ add_routes(
     app,
     chain,
     path="/v1",
+    enabled_endpoints=["invoke"]
+)
+
+add_routes(
+    app,
+    chain_with_error,
+    path="/v2",
     enabled_endpoints=["invoke"]
 )
 
