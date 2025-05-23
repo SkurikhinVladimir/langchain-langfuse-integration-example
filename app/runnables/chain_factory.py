@@ -2,7 +2,7 @@ from langchain.schema import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from runnables.llm_stub import SimpleLLM
-from runnables.custom_runnable import PassThroughRunnable, UppercaseRunnable, RaiseExceptionRunnable, StreamingEchoRunnable
+from runnables.custom_runnable import EchoRunnable, UppercaseRunnable, RaiseExceptionRunnable, StreamingEchoRunnable
 
 def get_prompt():
     return ChatPromptTemplate.from_messages([
@@ -17,7 +17,7 @@ def create_chain(config: RunnableConfig):
         prompt
         | llm
         | StrOutputParser()
-        | PassThroughRunnable()
+        | EchoRunnable()
         | UppercaseRunnable()
     ).with_config(config)
 
@@ -28,7 +28,7 @@ def create_chain_with_error(config: RunnableConfig):
         prompt
         | llm
         | StrOutputParser()
-        | PassThroughRunnable()
+        | EchoRunnable()
         | UppercaseRunnable()
         | RaiseExceptionRunnable()
     ).with_config(config)
@@ -40,6 +40,6 @@ def create_streaming_chain(config: RunnableConfig):
         prompt
         | llm
         | StrOutputParser()
-        | PassThroughRunnable()
+        | EchoRunnable()
         | StreamingEchoRunnable()
     ).with_config(config) 

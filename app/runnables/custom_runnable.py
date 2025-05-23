@@ -10,15 +10,21 @@ class UppercaseRunnable(BaseTraceableRunnable):
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         return input.upper()
 
-class PassThroughRunnable(BaseTraceableRunnable):
+class EchoRunnable(BaseTraceableRunnable):
     """
-    Runnable, который возвращает входную строку без изменений.
+    Runnable, который возвращает входную строку без изменений (и поддерживает стриминг).
     """
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         return input
 
     async def _arun(self, input: str, *, run_manager, **kwargs) -> str:
         return input
+
+    def _stream(self, input: str, *, run_manager, **kwargs):
+        yield input
+
+    async def _astream(self, input: str, *, run_manager, **kwargs):
+        yield input
 
 class RaiseExceptionRunnable(BaseTraceableRunnable):
     """
