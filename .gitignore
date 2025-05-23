@@ -1,35 +1,14 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
+.env
 venv/
 env/
-ENV/
 
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
 
 # Docker
 .docker/
@@ -37,7 +16,6 @@ docker-compose.override.yml
 
 # System files
 .DS_Store
-Thumbs.db
 
 # Logs
 *.log
@@ -47,3 +25,6 @@ logs/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# mypy
+.mypy_cache/
