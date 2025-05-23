@@ -1,21 +1,36 @@
 from abc import ABC, abstractmethod
+from typing import TypeVar, Any, Optional
 from langchain_core.runnables import RunnableSerializable
-from langchain_core.callbacks.manager import CallbackManager, AsyncCallbackManager
-from langchain_core.runnables.config import ensure_config
+from langchain_core.callbacks.manager import CallbackManager, AsyncCallbackManager, BaseRunManager
+from langchain_core.runnables.config import ensure_config, RunnableConfig
 
-class BaseTraceableRunnable(RunnableSerializable, ABC):
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+
+class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
     """
     Базовый класс для кастомных runnable с поддержкой трейсинга через Langfuse callback.
     """
 
     @abstractmethod
-    def _run(self, input, *, run_manager, **kwargs):
+    def _run(
+        self,
+        input: Input,
+        *,
+        run_manager: BaseRunManager,
+        **kwargs: Any
+    ) -> Output:
         """
         Основная логика runnable. Должен быть реализован в наследнике.
         """
         pass
 
-    def invoke(self, input, config=None, **kwargs):
+    def invoke(
+        self,
+        input: Input,
+        config: Optional[RunnableConfig] = None,
+        **kwargs: Any
+    ) -> Output:
         """
         Синхронный запуск с трейсингом.
         """
@@ -41,7 +56,12 @@ class BaseTraceableRunnable(RunnableSerializable, ABC):
             run_manager.on_chain_end(result)
             return result
 
-    async def ainvoke(self, input, config=None, **kwargs):
+    async def ainvoke(
+        self,
+        input: Input,
+        config: Optional[RunnableConfig] = None,
+        **kwargs: Any
+    ) -> Output:
         """
         Асинхронный запуск с трейсингом.
         """
@@ -67,7 +87,13 @@ class BaseTraceableRunnable(RunnableSerializable, ABC):
             await run_manager.on_chain_end(result)
             return result
 
-    async def _arun(self, input, *, run_manager, **kwargs):
+    async def _arun(
+        self,
+        input: Input,
+        *,
+        run_manager: BaseRunManager,
+        **kwargs: Any
+    ) -> Output:
         """
         Асинхронная версия основной логики. По умолчанию вызывает sync-метод.
         """
