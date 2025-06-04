@@ -2,6 +2,7 @@ from typing import Any, Optional
 from core.base_traceable_runnable import BaseTraceableRunnable
 import time
 import asyncio
+from pydantic import Field
 
 class UppercaseRunnable(BaseTraceableRunnable):
     """
@@ -50,3 +51,13 @@ class StreamingEchoRunnable(BaseTraceableRunnable):
         for char in input:
             yield char
             await asyncio.sleep(0.05)
+
+class NestedRunnable(BaseTraceableRunnable):
+    """
+    Runnable, который вызывает другой runnable внутри себя (например, UppercaseRunnable).
+    """
+    inner_runnable: BaseTraceableRunnable = Field(default_factory=UppercaseRunnable)
+
+    def _run(self, input: str, *, run_manager, **kwargs) -> str:
+        result = self.inner_runnable.invoke(input, **kwargs)
+        return f"[Nested] {result}"
