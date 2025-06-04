@@ -70,3 +70,24 @@ class NestedRunnable(BaseTraceableRunnable):
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         result = self.run_nested(self.inner_runnable, input, run_manager, **kwargs)
         return f"[Nested] {result}"
+
+
+class NestedStreamingRunnable(BaseTraceableRunnable):
+    """
+    Runnable, который стримит результат другого стримингового runnable (например, StreamingEchoRunnable).
+    """
+
+    inner_runnable: BaseTraceableRunnable = Field(default_factory=StreamingEchoRunnable)
+
+    def _stream(self, input: str, *, run_manager, **kwargs):
+        yield from self.stream_nested(self.inner_runnable, input, run_manager, **kwargs)
+
+    async def _astream(self, input: str, *, run_manager, **kwargs):
+        async for chunk in self.astream_nested(
+            self.inner_runnable, input, run_manager, **kwargs
+        ):
+            yield chunk
+
+    def _run(self, input: str, *, run_manager, **kwargs) -> str:
+        # Заглушка для совместимости с абстрактным методом
+        return input

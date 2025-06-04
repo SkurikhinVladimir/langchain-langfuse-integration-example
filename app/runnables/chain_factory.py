@@ -8,6 +8,7 @@ from runnables.custom_runnable import (
     RaiseExceptionRunnable,
     StreamingEchoRunnable,
     NestedRunnable,
+    NestedStreamingRunnable,
 )
 
 
@@ -51,4 +52,12 @@ def create_nested_chain(config: RunnableConfig):
     llm = SimpleLLM()
     return (
         prompt | llm | StrOutputParser() | EchoRunnable() | NestedRunnable()
+    ).with_config(config)
+
+
+def create_nested_streaming_chain(config: RunnableConfig):
+    prompt = get_prompt()
+    llm = SimpleLLM()
+    return (
+        prompt | llm | StrOutputParser() | EchoRunnable() | NestedStreamingRunnable()
     ).with_config(config)

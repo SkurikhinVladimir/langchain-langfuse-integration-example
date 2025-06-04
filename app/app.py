@@ -8,6 +8,7 @@ from runnables.chain_factory import (
     create_chain_with_error,
     create_streaming_chain,
     create_nested_chain,
+    create_nested_streaming_chain,
 )
 
 # Инициализация Langfuse handler и конфиг для runnable
@@ -19,6 +20,7 @@ chain = create_chain(config)
 chain_with_error = create_chain_with_error(config)
 streaming_chain = create_streaming_chain(config)
 nested_chain = create_nested_chain(config)
+nested_streaming_chain = create_nested_streaming_chain(config)
 
 # FastAPI приложение
 app = FastAPI(
@@ -38,6 +40,11 @@ add_routes(app, streaming_chain, path="/v3", enabled_endpoints=["invoke", "strea
 
 # Endpoint цепочки с вложенным runnable
 add_routes(app, nested_chain, path="/v4", enabled_endpoints=["invoke"])
+
+# Endpoint для вложенного стриминга
+add_routes(
+    app, nested_streaming_chain, path="/v5", enabled_endpoints=["invoke", "stream"]
+)
 
 if __name__ == "__main__":
     import uvicorn

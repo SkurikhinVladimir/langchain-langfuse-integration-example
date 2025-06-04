@@ -95,9 +95,6 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
     def stream(
         self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Any:
-        """
-        Синхронный стриминг-метод с трейсингом.
-        """
         config = ensure_config(config)
         callback_manager = CallbackManager.configure(
             config.get("callbacks"),
@@ -111,23 +108,26 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             name=config.get("run_name") or self.__class__.__name__,
             run_id=kwargs.pop("run_id", None),
         )
+        chunks = []
         try:
             for chunk in self._stream(input, run_manager=run_manager, **kwargs):
                 if hasattr(run_manager, "on_llm_new_token"):
-                    run_manager.on_llm_new_token(str(chunk), chunk=chunk)
+                    on_token = run_manager.on_llm_new_token
+                    if callable(on_token):
+                        on_token(str(chunk), chunk=chunk)
+                chunks.append(chunk)
                 yield chunk
         except Exception as e:
             run_manager.on_chain_error(e)
             raise
         else:
-            run_manager.on_chain_end(None)
+            # Объединяем все чанки в итоговую строку или результат
+            final_result = "".join(str(c) for c in chunks)
+            run_manager.on_chain_end(final_result)
 
     async def astream(
         self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Any:
-        """
-        Асинхронный стриминг-метод с трейсингом.
-        """
         config = ensure_config(config)
         callback_manager = AsyncCallbackManager.configure(
             config.get("callbacks"),
@@ -141,16 +141,21 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             name=config.get("run_name") or self.__class__.__name__,
             run_id=kwargs.pop("run_id", None),
         )
+        chunks = []
         try:
             async for chunk in self._astream(input, run_manager=run_manager, **kwargs):
                 if hasattr(run_manager, "on_llm_new_token"):
-                    await run_manager.on_llm_new_token(str(chunk), chunk=chunk)
+                    on_token = getattr(run_manager, "on_llm_new_token", None)
+                    if callable(on_token):
+                        await on_token(str(chunk), chunk=chunk)
+                chunks.append(chunk)
                 yield chunk
         except Exception as e:
             await run_manager.on_chain_error(e)
             raise
         else:
-            await run_manager.on_chain_end(None)
+            final_result = "".join(str(c) for c in chunks)
+            await run_manager.on_chain_end(final_result)
 
     def _stream(
         self, input: Input, *, run_manager: BaseRunManager, **kwargs: Any
@@ -202,3 +207,40 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             }
         )
         return await runnable.ainvoke(input, config=config, **kwargs)
+
+    def stream_nested(
+        self,
+        runnable: Runnable,
+        input: Any,
+        run_manager: ParentRunManager,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Синхронный стриминг вложенного Runnable с корректной передачей run_manager.get_child().
+        """
+        config = ensure_config(
+            {
+                "callbacks": run_manager.get_child(),
+                "run_name": runnable.__class__.__name__,
+            }
+        )
+        yield from runnable.stream(input, config=config, **kwargs)
+
+    async def astream_nested(
+        self,
+        runnable: Runnable,
+        input: Any,
+        run_manager: AsyncParentRunManager,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Асинхронный стриминг вложенного Runnable с корректной передачей run_manager.get_child().
+        """
+        config = ensure_config(
+            {
+                "callbacks": run_manager.get_child(),
+                "run_name": runnable.__class__.__name__,
+            }
+        )
+        async for chunk in runnable.astream(input, config=config, **kwargs):
+            yield chunk
