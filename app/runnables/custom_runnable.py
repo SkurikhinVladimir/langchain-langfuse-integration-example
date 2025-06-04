@@ -1,20 +1,23 @@
-from typing import Any, Optional
 from core.base_traceable_runnable import BaseTraceableRunnable
 import time
 import asyncio
 from pydantic import Field
 
+
 class UppercaseRunnable(BaseTraceableRunnable):
     """
     Runnable, который переводит входную строку в верхний регистр.
     """
+
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         return input.upper()
+
 
 class EchoRunnable(BaseTraceableRunnable):
     """
     Runnable, который возвращает входную строку без изменений (и поддерживает стриминг).
     """
+
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         return input
 
@@ -27,17 +30,21 @@ class EchoRunnable(BaseTraceableRunnable):
     async def _astream(self, input: str, *, run_manager, **kwargs):
         yield input
 
+
 class RaiseExceptionRunnable(BaseTraceableRunnable):
     """
     Runnable, который всегда выбрасывает ValueError для тестирования ошибок.
     """
+
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
-        raise ValueError('Ошибка при запуске цепочки')
+        raise ValueError("Ошибка при запуске цепочки")
+
 
 class StreamingEchoRunnable(BaseTraceableRunnable):
     """
     Runnable, который стримит входную строку по одному символу.
     """
+
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         # Просто возвращаем строку целиком для совместимости с абстрактным методом
         return input
@@ -52,12 +59,14 @@ class StreamingEchoRunnable(BaseTraceableRunnable):
             yield char
             await asyncio.sleep(0.05)
 
+
 class NestedRunnable(BaseTraceableRunnable):
     """
     Runnable, который вызывает другой runnable внутри себя (например, UppercaseRunnable).
     """
+
     inner_runnable: BaseTraceableRunnable = Field(default_factory=UppercaseRunnable)
 
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
-        result = self.inner_runnable.invoke(input, **kwargs)
+        result = self.run_nested(self.inner_runnable, input, run_manager, **kwargs)
         return f"[Nested] {result}"

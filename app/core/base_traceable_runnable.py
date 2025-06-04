@@ -1,11 +1,18 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar, Any, Optional
 from langchain_core.runnables import RunnableSerializable
-from langchain_core.callbacks.manager import CallbackManager, AsyncCallbackManager, BaseRunManager
+from langchain_core.callbacks.manager import (
+    CallbackManager,
+    AsyncCallbackManager,
+    BaseRunManager,
+)
 from langchain_core.runnables.config import ensure_config, RunnableConfig
+from langchain_core.runnables.base import Runnable
+from langchain_core.callbacks.manager import ParentRunManager, AsyncParentRunManager
 
 Input = TypeVar("Input")
 Output = TypeVar("Output")
+
 
 class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
     """
@@ -14,11 +21,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
 
     @abstractmethod
     def _run(
-        self,
-        input: Input,
-        *,
-        run_manager: BaseRunManager,
-        **kwargs: Any
+        self, input: Input, *, run_manager: BaseRunManager, **kwargs: Any
     ) -> Output:
         """
         Основная логика runnable. Должен быть реализован в наследнике.
@@ -26,10 +29,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
         pass
 
     def invoke(
-        self,
-        input: Input,
-        config: Optional[RunnableConfig] = None,
-        **kwargs: Any
+        self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Output:
         """
         Синхронный запуск с трейсингом.
@@ -57,10 +57,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             return result
 
     async def ainvoke(
-        self,
-        input: Input,
-        config: Optional[RunnableConfig] = None,
-        **kwargs: Any
+        self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Output:
         """
         Асинхронный запуск с трейсингом.
@@ -88,11 +85,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             return result
 
     async def _arun(
-        self,
-        input: Input,
-        *,
-        run_manager: BaseRunManager,
-        **kwargs: Any
+        self, input: Input, *, run_manager: BaseRunManager, **kwargs: Any
     ) -> Output:
         """
         Асинхронная версия основной логики. По умолчанию вызывает sync-метод.
@@ -100,10 +93,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
         return self._run(input, run_manager=run_manager, **kwargs)
 
     def stream(
-        self,
-        input: Input,
-        config: Optional[RunnableConfig] = None,
-        **kwargs: Any
+        self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Any:
         """
         Синхронный стриминг-метод с трейсингом.
@@ -133,10 +123,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             run_manager.on_chain_end(None)
 
     async def astream(
-        self,
-        input: Input,
-        config: Optional[RunnableConfig] = None,
-        **kwargs: Any
+        self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Any:
         """
         Асинхронный стриминг-метод с трейсингом.
@@ -166,11 +153,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
             await run_manager.on_chain_end(None)
 
     def _stream(
-        self,
-        input: Input,
-        *,
-        run_manager: BaseRunManager,
-        **kwargs: Any
+        self, input: Input, *, run_manager: BaseRunManager, **kwargs: Any
     ) -> Any:
         """
         Синхронная стриминг-логика. Должна быть реализована в наследнике.
@@ -178,14 +161,44 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
         yield self._run(input, run_manager=run_manager, **kwargs)
 
     async def _astream(
-        self,
-        input: Input,
-        *,
-        run_manager: BaseRunManager,
-        **kwargs: Any
+        self, input: Input, *, run_manager: BaseRunManager, **kwargs: Any
     ) -> Any:
         """
         Асинхронная стриминг-логика. По умолчанию вызывает sync-метод.
         """
         for chunk in self._stream(input, run_manager=run_manager, **kwargs):
-            yield chunk 
+            yield chunk
+
+    def run_nested(
+        self,
+        runnable: Runnable,
+        input: Any,
+        run_manager: ParentRunManager,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Запускает вложенный Runnable с корректной передачей run_manager.get_child()
+        для вложенного трейсинга.
+        """
+        config = ensure_config(
+            {
+                "callbacks": run_manager.get_child(),
+                "run_name": runnable.__class__.__name__,
+            }
+        )
+        return runnable.invoke(input, config=config, **kwargs)
+
+    async def arun_nested(
+        self,
+        runnable: Runnable,
+        input: Any,
+        run_manager: AsyncParentRunManager,
+        **kwargs: Any,
+    ) -> Any:
+        config = ensure_config(
+            {
+                "callbacks": run_manager.get_child(),
+                "run_name": runnable.__class__.__name__,
+            }
+        )
+        return await runnable.ainvoke(input, config=config, **kwargs)

@@ -3,13 +3,15 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
+
 class SimpleLLM(BaseChatModel):
     """
     Простая LLM-заглушка для демонстрации работы цепочек.
     """
+
     model_name: str = "simple-llm"
     temperature: float = 0.7
-    
+
     def _generate(
         self,
         messages: List[BaseMessage],
@@ -29,4 +31,4 @@ class SimpleLLM(BaseChatModel):
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:
-        return {"model_name": self.model_name, "temperature": self.temperature} 
+        return {"model_name": self.model_name, "temperature": self.temperature}
