@@ -68,7 +68,7 @@ class NestedRunnable(BaseTraceableRunnable):
     inner_runnable: BaseTraceableRunnable = Field(default_factory=UppercaseRunnable)
 
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
-        result = self.run_nested(self.inner_runnable, input, run_manager, **kwargs)
+        result = self.invoke_nested(self.inner_runnable, input, run_manager, **kwargs)
         return f"[Nested] {result}"
 
 
@@ -89,5 +89,4 @@ class NestedStreamingRunnable(BaseTraceableRunnable):
             yield chunk
 
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
-        # Заглушка для совместимости с абстрактным методом
         return input

@@ -174,7 +174,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
         for chunk in self._stream(input, run_manager=run_manager, **kwargs):
             yield chunk
 
-    def run_nested(
+    def invoke_nested(
         self,
         runnable: Runnable,
         input: Any,
@@ -193,7 +193,7 @@ class BaseTraceableRunnable(RunnableSerializable[Input, Output], ABC):
         )
         return runnable.invoke(input, config=config, **kwargs)
 
-    async def arun_nested(
+    async def ainvoke_nested(
         self,
         runnable: Runnable,
         input: Any,
