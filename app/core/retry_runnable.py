@@ -41,4 +41,35 @@ class RetryRunnable(BaseTraceableRunnable):
                 last_exc = exc
                 if attempt < self.max_retries:
                     await asyncio.sleep(self.delay)
-        return self._handle_final_result(last_exc) 
+        return self._handle_final_result(last_exc)
+
+    def _stream(self, input: str, *, run_manager, **kwargs) -> Iterator[str]:
+        last_exc = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                yield from self.stream_nested(self.inner_runnable, input, run_manager, **kwargs)
+                return
+            except Exception as exc:
+                last_exc = exc
+                if attempt < self.max_retries:
+                    time.sleep(self.delay)
+        
+        result = self._handle_final_result(last_exc)
+        if result is not None:
+            yield result
+
+    async def _astream(self, input: str, *, run_manager, **kwargs) -> AsyncIterator[str]:
+        last_exc = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                async for chunk in self.astream_nested(self.inner_runnable, input, run_manager, **kwargs):
+                    yield chunk
+                return
+            except Exception as exc:
+                last_exc = exc
+                if attempt < self.max_retries:
+                    await asyncio.sleep(self.delay)
+        
+        result = self._handle_final_result(last_exc)
+        if result is not None:
+            yield result
