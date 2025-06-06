@@ -1,19 +1,22 @@
-from .base_traceable_runnable import BaseTraceableRunnable
+from core.base_traceable_runnable import BaseTraceableRunnable
 from pydantic import Field
 import time
 import asyncio
-from typing import Optional
+from typing import Any, Iterator, AsyncIterator, TypeVar, Generic, Optional
 
-class RetryRunnable(BaseTraceableRunnable):
+InputType = TypeVar('InputType')
+OutputType = TypeVar('OutputType')
+
+class RetryRunnable(BaseTraceableRunnable, Generic[InputType, OutputType]):
     """
     Runnable, который повторяет попытку вызова внутреннего runnable при ошибке.
     """
-    inner_runnable: BaseTraceableRunnable = Field(...)
+    inner_runnable: BaseTraceableRunnable
     max_retries: int = Field(default=1)
     delay: float = Field(default=0)  # в секундах
-    default_value: Optional[str] = Field(default=None)
+    default_value: Optional[OutputType] = Field(default=None)
 
-    def _handle_final_result(self, last_exc):
+    def _handle_final_result(self, last_exc: Any) -> OutputType:
         if self.default_value is not None:
             return self.default_value
         if last_exc is not None:
@@ -21,7 +24,7 @@ class RetryRunnable(BaseTraceableRunnable):
         else:
             raise RuntimeError("Unknown error in RetryRunnable")
 
-    def _run(self, input: str, *, run_manager, **kwargs) -> str:
+    def _run(self, input: InputType, *, run_manager: Any, **kwargs: Any) -> OutputType:
         last_exc = None
         for attempt in range(1, self.max_retries + 1):
             try:
@@ -32,7 +35,7 @@ class RetryRunnable(BaseTraceableRunnable):
                     time.sleep(self.delay)
         return self._handle_final_result(last_exc)
 
-    async def _arun(self, input: str, *, run_manager, **kwargs) -> str:
+    async def _arun(self, input: InputType, *, run_manager: Any, **kwargs: Any) -> OutputType:
         last_exc = None
         for attempt in range(1, self.max_retries + 1):
             try:
@@ -43,7 +46,7 @@ class RetryRunnable(BaseTraceableRunnable):
                     await asyncio.sleep(self.delay)
         return self._handle_final_result(last_exc)
 
-    def _stream(self, input: str, *, run_manager, **kwargs) -> Iterator[str]:
+    def _stream(self, input: InputType, *, run_manager: Any, **kwargs: Any) -> Iterator[OutputType]:
         last_exc = None
         for attempt in range(1, self.max_retries + 1):
             try:
@@ -58,7 +61,7 @@ class RetryRunnable(BaseTraceableRunnable):
         if result is not None:
             yield result
 
-    async def _astream(self, input: str, *, run_manager, **kwargs) -> AsyncIterator[str]:
+    async def _astream(self, input: InputType, *, run_manager: Any, **kwargs: Any) -> AsyncIterator[OutputType]:
         last_exc = None
         for attempt in range(1, self.max_retries + 1):
             try:
