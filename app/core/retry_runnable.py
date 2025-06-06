@@ -13,6 +13,14 @@ class RetryRunnable(BaseTraceableRunnable):
     delay: float = Field(default=0)  # в секундах
     default_value: Optional[str] = Field(default=None)
 
+    def _handle_final_result(self, last_exc):
+        if self.default_value is not None:
+            return self.default_value
+        if last_exc is not None:
+            raise last_exc
+        else:
+            raise RuntimeError("Unknown error in RetryRunnable")
+
     def _run(self, input: str, *, run_manager, **kwargs) -> str:
         last_exc = None
         for attempt in range(1, self.max_retries + 1):
@@ -22,12 +30,7 @@ class RetryRunnable(BaseTraceableRunnable):
                 last_exc = exc
                 if attempt < self.max_retries:
                     time.sleep(self.delay)
-        if self.default_value is not None:
-            return self.default_value
-        if last_exc is not None:
-            raise last_exc
-        else:
-            raise RuntimeError("Unknown error in RetryRunnable")
+        return self._handle_final_result(last_exc)
 
     async def _arun(self, input: str, *, run_manager, **kwargs) -> str:
         last_exc = None
@@ -38,9 +41,4 @@ class RetryRunnable(BaseTraceableRunnable):
                 last_exc = exc
                 if attempt < self.max_retries:
                     await asyncio.sleep(self.delay)
-        if self.default_value is not None:
-            return self.default_value
-        if last_exc is not None:
-            raise last_exc
-        else:
-            raise RuntimeError("Unknown error in RetryRunnable") 
+        return self._handle_final_result(last_exc) 
