@@ -67,7 +67,7 @@ def create_nested_streaming_chain(config: RunnableConfig):
 def create_retry_chain(config: RunnableConfig):
     prompt = get_prompt()
     llm = SimpleLLM()
-    retry_runnable = RetryRunnable(
+    retry_runnable: RetryRunnable = RetryRunnable(
         inner_runnable=RaiseExceptionRunnable(),
         max_retries=3,
         delay=0.1,
