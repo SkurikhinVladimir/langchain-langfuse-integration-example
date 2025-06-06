@@ -10,6 +10,7 @@ from runnables.custom_runnable import (
     NestedRunnable,
     NestedStreamingRunnable,
 )
+from core.retry_runnable import RetryRunnable
 
 
 def get_prompt():
@@ -60,4 +61,17 @@ def create_nested_streaming_chain(config: RunnableConfig):
     llm = SimpleLLM()
     return (
         prompt | llm | StrOutputParser() | EchoRunnable() | NestedStreamingRunnable()
+    ).with_config(config)
+
+
+def create_retry_chain(config: RunnableConfig):
+    prompt = get_prompt()
+    llm = SimpleLLM()
+    retry_runnable = RetryRunnable(
+        inner_runnable=RaiseExceptionRunnable(),
+        max_retries=3,
+        delay=0.1,
+    )
+    return (
+        prompt | llm | StrOutputParser() | EchoRunnable() | retry_runnable
     ).with_config(config)
