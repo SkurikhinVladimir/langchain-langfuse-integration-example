@@ -1,7 +1,7 @@
-langchain==0.3.7
-langchain-openai==0.3.6
+langchain==0.3.27
+langchain-openai==0.3.35
 langserve[all]==0.3.1
-pydantic-settings==2.5.2
-langchain-community
-python-dotenv
-langfuse
+pydantic-settings==2.10.1
+langchain-community==0.3.31
+python-dotenv==1.1.0
+langfuse==3.6.1

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar, Any, Optional, Iterator, AsyncIterator
+from pydantic import ConfigDict
 from langchain_core.runnables import RunnableSerializable
 from langchain_core.callbacks.manager import (
     CallbackManager,
@@ -18,6 +19,8 @@ class BaseTraceableRunnable(RunnableSerializable[InputType, OutputType], ABC):
     """
     Базовый класс для кастомных runnable с поддержкой трейсинга через Langfuse callback.
     """
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @abstractmethod
     def _run(

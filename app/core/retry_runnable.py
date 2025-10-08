@@ -1,4 +1,5 @@
 from core.base_traceable_runnable import BaseTraceableRunnable
+from langchain_core.runnables.base import Runnable
 from pydantic import Field
 import time
 import asyncio
@@ -13,7 +14,7 @@ class RetryRunnable(BaseTraceableRunnable[InputType, OutputType]):
     Runnable, который повторяет попытку вызова внутреннего runnable при ошибке.
     """
 
-    inner_runnable: BaseTraceableRunnable[InputType, OutputType]
+    inner_runnable: Runnable[InputType, OutputType]
     max_retries: int = Field(default=1)
     delay: float = Field(default=0)  # в секундах
     default_value: Optional[OutputType] = Field(default=None)
